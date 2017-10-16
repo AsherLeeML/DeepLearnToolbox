@@ -23,23 +23,24 @@ if isfield(opts,'plot') && opts.plot == 1
     fhandle = figure();
 end
 
-m = size(train_x, 1);
-
-batchsize = opts.batchsize;
 numepochs = opts.numepochs;
 
+m = size(train_x, 1);
+batchsize = opts.batchsize;
 numbatches = m / batchsize;
 
-assert(rem(numbatches, 1) == 0, 'numbatches must be a integer');
+
+% assert(rem(numbatches, 1) == 0, 'numbatches must be a integer');
 
 L = zeros(numepochs*numbatches,1);
 n = 1;
 for i = 1 : numepochs
     tic;
-    for j = 2 : nn.n
-        nn.mean_sigma2{j-1} = 0;
-        nn.mean_mu{j-1} = 0;
-    end;
+    for jj = 2:nn.n
+        nn.mean_sigma2{jj-1} = 0;
+        nn.mean_mu{jj-1} = 0;
+    end
+    
     kk = randperm(m);
     for l = 1 : numbatches
         batch_x = train_x(kk((l - 1) * batchsize + 1 : l * batchsize), :);
@@ -56,53 +57,35 @@ for i = 1 : numepochs
         nn = nnapplygrads(nn);
         
         L(n) = nn.L;
-        for j = 2 : nn.n
-            nn.mean_sigma2{j-1} = nn.mean_sigma2{j-1} + nn.sigma2{j-1};
-            nn.mean_mu{j-1} = nn.mean_mu{j-1} + nn.mu{j-1};
-        end;
+        
+        for jj = 2:nn.n
+            nn.mean_sigma2{jj-1} = nn.mean_sigma2{jj-1} + nn.sigma2{jj-1};
+            nn.mean_mu{jj-1} = nn.mean_mu{jj-1} + nn.mu{jj-1};
+        end
         
         n = n + 1;
-        if mod(l,10)==0
-            fprintf('epoch:%d iteration:%d/%d\n',i,l,numbatches);
-            gradientNorm = [];
-            for ll = 1:nn.n-1
-                gradientNorm = [gradientNorm ' ' num2str(norm(nn.dW{ll}(:,2:end)))];
-            end;
-            disp(gradientNorm);
-        end;
-        if mod(l,100)==0
-            disp([nn.ra mean(nn.gamma{2}) mean(nn.beta{2})]);
-        end;
     end
     
-    for j = 2 : nn.n
-        nn.mean_sigma2{j-1} = nn.mean_sigma2{j-1} / (numbatches - 1);
-        nn.mean_mu{j-1} = nn.mean_mu{j-1} / numbatches;
-    end;
+    for jj = 2:nn.n
+        nn.mean_sigma2{jj-1} = nn.mean_sigma2{jj-1} / (numbatches - 1);
+        nn.mean_mu{jj-1} = nn.mean_mu{jj-1} / numbatches;
+    end
     
     t = toc;
-    
 
     if opts.validation == 1
         loss = nneval(nn, loss, train_x, train_y, val_x, val_y);
-        str_perf = sprintf('; Full-batch train mse = %f, val mse = %f', loss.train.e(end), loss.val.e(end));
+%         str_perf = sprintf('; Full-batch train mse = %f, val mse = %f', loss.train.e(end), loss.val.e(end));
     else
         loss = nneval(nn, loss, train_x, train_y);
-        str_perf = sprintf('; Full-batch train err = %f', loss.train.e(end));
+%         str_perf = sprintf('; Full-batch train err = %f', loss.train.e(end));
     end
     if ishandle(fhandle)
         nnupdatefigures(nn, fhandle, loss, opts, i);
     end
         
-    disp(['epoch ' num2str(i) '/' num2str(opts.numepochs) '. Took ' num2str(t) ' seconds' '. Mini-batch mean squared error on training set is ' num2str(mean(L((n-numbatches):(n-1)))) str_perf]);
-    disp(nn.ra);
+%     disp(['epoch ' num2str(i) '/' num2str(opts.numepochs) '. Took ' num2str(t) ' seconds' '. Mini-batch mean squared error on training set is ' num2str(mean(L((n-numbatches):(n-1)))) str_perf]);
     nn.learningRate = nn.learningRate * nn.scaling_learningRate;
-    if nn.learningRate < 0.00001
-        nn.learningRate = 0.00001;
-    end;
-%     if i==5
-%         nn.dropoutFraction   = 0.2;
-%     end;
 end
 end
 

@@ -1,6 +1,5 @@
 function [er, bad] = cnntest(net, x, y)
     %  feedforward
-    net.testing =true;
     net = cnnff(net, x);
     [~, h] = max(net.o);
     [~, a] = max(y);
